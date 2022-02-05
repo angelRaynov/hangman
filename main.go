@@ -25,73 +25,106 @@ import (
 
 var guessWords = []string{"apple", "United States of America", "bitcoin", "disney", "book"}
 var isLetter = regexp.MustCompile(`^[a-zA-Z]$`).MatchString
+var reader = bufio.NewReader(os.Stdin)
 
 func main() {
-	guessWord := generateGuessWord()
-	guessWordSplit := strings.Split(guessWord, "")
+	guessWordSplit := generateGuessWord()
 
-	initialWordState := getInitialState(guessWordSplit)
-	printInitialState(initialWordState)
+	wordState := getInitialState(guessWordSplit)
+	printInitialState(wordState)
 
-	reader := bufio.NewReader(os.Stdin)
 	mistakeCounter := 0
-	for {
-		fmt.Println("Enter your guess.")
 
-		guess, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		guess = strings.TrimSpace(guess)
+	for !isGameOver(mistakeCounter, getCurrentWordState(wordState)) {
+		guess := readInput()
 
 		if !isLetter(guess) {
 			fmt.Println("Invalid input!")
+			continue
 		}
 
-		correctGuess := false
-		for i, char := range guessWordSplit {
-			if strings.ToLower(guess) == strings.ToLower(char) {
-				initialWordState[i] = char
-				correctGuess = true
-			}
-		}
+		correctGuess := isCorrectGuess(guessWordSplit, guess, wordState)
 
-		printCurrentWordState(initialWordState)
+		printWordState(wordState)
 
 		if !correctGuess {
 			mistakeCounter++
-			fileName := fmt.Sprintf("hangmanState/state%d.txt", mistakeCounter)
-			hangmanState, err := os.ReadFile(fileName)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			if mistakeCounter == 9 {
-				fmt.Println("GAME OVER!")
-				break
-			}
-
-			fmt.Println(string(hangmanState))
-
+			printHangmanState(mistakeCounter)
 		}
 	}
 }
 
-func printCurrentWordState(initialWordState []string) {
-	wordState := strings.Join(initialWordState, "")
-
-	fmt.Println(wordState)
-
-	if !strings.Contains(wordState, "_") {
-		fmt.Println("You won!")
-		os.Exit(0)
+func printHangmanState(mistakeCounter int) {
+	hangmanState, err := getHangmanState(mistakeCounter)
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	fmt.Println(string(hangmanState))
 }
 
-func printInitialState(initialWordState []string) {
-	str := strings.Join(initialWordState, "")
+func printWordState(wordState []string) {
+	fmt.Println(getCurrentWordState(wordState))
+}
+
+func isGameOver(mistakeCounter int, wordState string) bool {
+	if isHangmanCompleted(mistakeCounter) {
+		fmt.Println("GAME OVER, YOU LOST!")
+		return true
+	} else if isWordCompleted(wordState) {
+		fmt.Println("GAME OVER, YOU WON!")
+		return true
+	}
+
+	return false
+}
+
+func readInput() string {
+	fmt.Println("Enter your guess.")
+	fmt.Print("> ")
+	guess, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	guess = strings.TrimSpace(guess)
+	return guess
+}
+
+func isHangmanCompleted(mistakeCounter int) bool {
+	return mistakeCounter == 9
+}
+
+func getHangmanState(mistakeCounter int) ([]byte, error) {
+	fileName := fmt.Sprintf("hangmanState/state%d.txt", mistakeCounter)
+	hangmanState, err := os.ReadFile(fileName)
+
+	return hangmanState, err
+}
+
+func isCorrectGuess(guessWordSplit []string, guess string, wordState []string) bool {
+	correctGuess := false
+
+	for i, char := range guessWordSplit {
+		if strings.ToLower(guess) == strings.ToLower(char) {
+			wordState[i] = char
+			correctGuess = true
+		}
+	}
+
+	return correctGuess
+}
+
+func getCurrentWordState(wordState []string) string {
+	return strings.Join(wordState, "")
+}
+
+func isWordCompleted(wordState string) bool {
+	return !strings.Contains(wordState, "_")
+}
+
+func printInitialState(wordState []string) {
+	str := strings.Join(wordState, "")
 	fmt.Println(str)
 }
 
@@ -109,8 +142,9 @@ func getInitialState(guessWord []string) []string {
 	return res
 }
 
-func generateGuessWord() string {
+func generateGuessWord() []string {
 	rand.Seed(time.Now().UnixNano())
-	return guessWords[rand.Intn(len(guessWords))]
+	word := guessWords[rand.Intn(len(guessWords))]
 
+	return strings.Split(word, "")
 }
