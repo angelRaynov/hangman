@@ -23,9 +23,7 @@ import (
 // If word is guessed -> game over, you win
 // If hangman is complete -› game over, you lose
 
-var guessWords = []string{"book"}
-
-//var guessWords = []string{"apple", "United States of America", "bitcoin", "disney", "book"}
+var guessWords = []string{"apple", "United States of America", "bitcoin", "disney", "book"}
 var isLetter = regexp.MustCompile(`^[a-zA-Z]$`).MatchString
 var reader = bufio.NewReader(os.Stdin)
 
@@ -70,10 +68,10 @@ func printWordState(wordState []string) {
 }
 
 func isGameOver(mistakeCounter int, wordState string) bool {
-	if isHangmanCompleted(mistakeCounter) {
+	if isHangmanComplete(mistakeCounter) && !isWordComplete(wordState) {
 		fmt.Println("GAME OVER, YOU LOST!")
 		return true
-	} else if isWordCompleted(wordState) {
+	} else if isWordComplete(wordState) && !isHangmanComplete(mistakeCounter) {
 		fmt.Println("GAME OVER, YOU WON!")
 		return true
 	}
@@ -93,7 +91,7 @@ func readInput() string {
 	return guess
 }
 
-func isHangmanCompleted(mistakeCounter int) bool {
+func isHangmanComplete(mistakeCounter int) bool {
 	return mistakeCounter == 9
 }
 
@@ -136,7 +134,7 @@ func getCurrentWordState(wordState []string) string {
 	return strings.Join(wordState, "")
 }
 
-func isWordCompleted(wordState string) bool {
+func isWordComplete(wordState string) bool {
 	return !strings.Contains(wordState, "_")
 }
 
