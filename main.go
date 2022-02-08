@@ -23,7 +23,9 @@ import (
 // If word is guessed -> game over, you win
 // If hangman is complete -› game over, you lose
 
-var guessWords = []string{"apple", "United States of America", "bitcoin", "disney", "book"}
+var guessWords = []string{"book"}
+
+//var guessWords = []string{"apple", "United States of America", "bitcoin", "disney", "book"}
 var isLetter = regexp.MustCompile(`^[a-zA-Z]$`).MatchString
 var reader = bufio.NewReader(os.Stdin)
 
@@ -106,13 +108,28 @@ func isCorrectGuess(guessWordSplit []string, guess string, wordState []string) b
 	correctGuess := false
 
 	for i, char := range guessWordSplit {
-		if strings.ToLower(guess) == strings.ToLower(char) {
+		guess = strings.ToLower(guess)
+		char = strings.ToLower(char)
+
+		if isLetterAlreadyUsed(guess, wordState, i) {
+			return true
+		}
+
+		if guess == char {
 			wordState[i] = char
 			correctGuess = true
 		}
 	}
 
 	return correctGuess
+}
+
+func isLetterAlreadyUsed(guess string, wordState []string, i int) bool {
+	if guess == wordState[i] {
+		fmt.Printf("You already used the letter %s\n", guess)
+		return true
+	}
+	return false
 }
 
 func getCurrentWordState(wordState []string) string {
